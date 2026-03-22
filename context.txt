@@ -1,0 +1,303 @@
+================================================================================
+  LeGarden — Project Context (Safe State Snapshot)
+  Date: 2026-03-22
+  Commit: 4683be4 (main)
+  Repo: https://github.com/Legacy4GE/LeGarden
+================================================================================
+
+1. PROJECT OVERVIEW
+-------------------
+LeGarden is a web-first calendar and scheduler webapp for tracking garden
+growth. It supports desktop and mobile (responsive PWA), provides USDA
+hardiness zone awareness, frost/planting tips, plant milestone tracking,
+and a garden dashboard with live status.
+
+Owner: Legacy4GE (GitHub)
+Profile: "Legacy Garden", USDA Zone 7b, ZIP 37211, TZ America/New_York
+
+
+2. TECH STACK
+-------------
+Backend:
+  - Python 3.12, FastAPI 0.115.6, Uvicorn 0.34.0
+  - SQLAlchemy 2.0.36 (ORM), SQLite (dev database: backend/legarden.db)
+  - Pydantic 2.10.3 (validation), Pydantic-Settings 2.7.0
+  - Alembic 1.14.0 (installed but not configured — using init_db.py)
+  - Virtual environment: backend/.venv/
+
+Frontend:
+  - React 19.2.4 + Vite 8.0.1
+  - Tailwind CSS 4.2.2 (via @tailwindcss/vite plugin)
+  - FullCalendar 6.1.20 (daygrid, timegrid, list, interaction)
+  - Axios 1.13.6 (API client)
+  - React Router DOM 7.13.1
+  - PWA: manifest.json, service worker (sw.js), apple-touch-icon
+
+
+3. HOW TO RUN
+-------------
+Backend:
+  cd backend
+  source .venv/bin/activate
+  python init_db.py          # create/update tables
+  python seed_data.py        # seed example plants (idempotent)
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+Frontend:
+  cd frontend
+  npm install
+  npm run dev                # runs on http://localhost:5173
+
+Access:
+  Desktop:  http://localhost:5173
+  Mobile:   http://<LAN_IP>:5173  (same Wi-Fi)
+  API docs: http://localhost:8000/docs (Swagger)
+
+CORS: Backend allows origins localhost:5173 and 192.168.1.168:5173.
+Vite proxy: /api -> http://localhost:8000
+Vite config: server.host = true (exposes on LAN)
+
+
+4. GIT HISTORY
+--------------
+4683be4  Add My Garden dashboard, mobile PWA, timezone, and notifications
+506af78  Add dashboard, user profile with USDA zones, and frost planting tips
+d8b22fe  Initial scaffold: LeGarden garden growth tracker
+
+
+5. FILE STRUCTURE
+-----------------
+LeGarden/
+├── backend/
+│   ├── .venv/                          # Python virtual environment
+│   ├── .env.example                    # Environment template
+│   ├── init_db.py                      # Create all database tables
+│   ├── seed_data.py                    # Seed Roma Tomato & Bell Pepper data
+│   ├── requirements.txt                # Python dependencies
+│   ├── legarden.db                     # SQLite database (gitignored)
+│   └── app/
+│       ├── __init__.py
+│       ├── main.py                     # FastAPI app, CORS, router registration
+│       ├── config.py                   # Settings (DATABASE_URL, APP_NAME)
+│       ├── database.py                 # Engine, SessionLocal, Base, get_db
+│       ├── models/
+│       │   ├── __init__.py             # Exports: Plant, GardenEvent, UserProfile, GrowthMilestone
+│       │   ├── plant.py                # Plant model (name, species, variety, status, harvest date)
+│       │   ├── event.py                # GardenEvent model (title, type, start/end, plant FK)
+│       │   ├── profile.py              # UserProfile model (name, zone, zip, timezone)
+│       │   └── milestone.py            # GrowthMilestone model (name, days, completed_date)
+│       ├── schemas/
+│       │   ├── __init__.py
+│       │   ├── plant.py                # PlantCreate/Update/Read/DetailRead
+│       │   ├── event.py                # EventCreate/Update/Read
+│       │   ├── profile.py             # ProfileCreate/Update/Read (with timezone)
+│       │   └── milestone.py            # MilestoneCreate/Update/Read
+│       ├── routers/
+│       │   ├── __init__.py
+│       │   ├── plants.py              # CRUD + /active, /{id}/detail, milestones, /apply-template
+│       │   ├── events.py              # CRUD for garden events
+│       │   ├── profile.py            # CRUD + /tips endpoint
+│       │   └── zones.py              # /zones (USDA frost data) + /zones/timezones
+│       └── services/
+│           ├── __init__.py
+│           ├── frost_data.py          # ZONE_FROST_DATES, PLANT_FROST_GUIDE, get_planting_tips()
+│           └── growth_data.py         # GROWTH_TEMPLATES, get_growth_template(), compute_harvest_date()
+│
+├── frontend/
+│   ├── index.html                      # Entry HTML (PWA meta tags, manifest link)
+│   ├── package.json                    # Node dependencies
+│   ├── vite.config.js                  # Vite + Tailwind + proxy + host:true
+│   ├── eslint.config.js
+│   ├── public/
+│   │   ├── manifest.json              # PWA manifest
+│   │   ├── sw.js                      # Service worker
+│   │   ├── favicon.svg
+│   │   ├── apple-touch-icon.png       # iOS home screen icon (180x180)
+│   │   ├── apple-touch-icon.svg
+│   │   ├── icons/
+│   │   │   ├── icon.svg               # App icon source
+│   │   │   ├── icon-192.png           # PWA icon 192x192
+│   │   │   └── icon-512.png           # PWA icon 512x512
+│   │   └── icons.svg                  # Vite default icons
+│   └── src/
+│       ├── main.jsx                    # App entry + SW registration
+│       ├── App.jsx                     # Router: / /calendar /plants /profile
+│       ├── App.css                     # (empty, using Tailwind)
+│       ├── index.css                   # @import "tailwindcss"
+│       ├── registerSW.js              # Service worker registration
+│       ├── api/
+│       │   └── client.js              # Axios: plantsApi, eventsApi, profileApi, tipsApi, zonesApi
+│       ├── components/
+│       │   ├── Navbar.jsx             # Nav bar + notifications bell (overdue + upcoming)
+│       │   ├── EventModal.jsx         # Create/edit calendar events (mobile bottom-sheet)
+│       │   ├── FrostTips.jsx          # Frost tips cards grouped by urgency
+│       │   ├── MyGardenSection.jsx    # Active plant status cards with progress bars
+│       │   └── PlantDetailModal.jsx   # Plant detail: milestones timeline + overdue tasks
+│       └── pages/
+│           ├── DashboardPage.jsx      # Landing: hero, clock, My Garden, quick actions, tips
+│           ├── CalendarPage.jsx       # FullCalendar (list view on mobile)
+│           ├── PlantsPage.jsx         # Plant CRUD form + cards
+│           └── ProfilePage.jsx        # Profile: name, zone, timezone, zip, frost preview
+│
+├── .gitignore
+├── README.md
+└── context.txt                         # THIS FILE
+
+
+6. DATABASE SCHEMA
+------------------
+TABLE: plants
+  id                    INTEGER PK
+  name                  VARCHAR(100) NOT NULL
+  species               VARCHAR(200)
+  variety               VARCHAR(200)
+  date_planted          DATE
+  location              VARCHAR(200)
+  notes                 TEXT
+  status                VARCHAR(50) DEFAULT "planted"    [planted|growing|harvesting|dormant|removed]
+  expected_harvest_date DATE
+
+TABLE: garden_events
+  id                    INTEGER PK
+  title                 VARCHAR(200) NOT NULL
+  description           TEXT
+  event_type            VARCHAR(50) NOT NULL              [water|fertilize|prune|harvest|plant|inspect|other]
+  start_time            DATETIME NOT NULL
+  end_time              DATETIME
+  plant_id              INTEGER FK -> plants.id
+
+TABLE: user_profiles
+  id                    INTEGER PK
+  display_name          VARCHAR(100) NOT NULL
+  usda_zone             VARCHAR(10) NOT NULL              [1a-13b]
+  zip_code              VARCHAR(10)
+  timezone              VARCHAR(50) DEFAULT "America/New_York"
+  created_at            DATETIME NOT NULL
+
+TABLE: growth_milestones
+  id                    INTEGER PK
+  plant_id              INTEGER FK -> plants.id NOT NULL
+  name                  VARCHAR(200) NOT NULL
+  description           TEXT
+  days_from_planting    INTEGER NOT NULL
+  completed_date        DATE
+  sort_order            INTEGER NOT NULL DEFAULT 0
+
+
+7. API ENDPOINTS
+----------------
+Health:
+  GET  /health                              -> {"status": "ok"}
+
+Plants:
+  GET  /api/plants/                         -> list[PlantRead]
+  POST /api/plants/                         -> PlantRead (201)
+  GET  /api/plants/active                   -> list[PlantRead] (status in planted/growing/harvesting)
+  GET  /api/plants/{id}                     -> PlantRead
+  PATCH /api/plants/{id}                    -> PlantRead
+  DELETE /api/plants/{id}                   -> 204
+  GET  /api/plants/{id}/detail              -> {plant, milestones, overdue_events}
+  POST /api/plants/{id}/milestones          -> MilestoneRead (201)
+  PATCH /api/plants/{id}/milestones/{mid}   -> MilestoneRead
+  POST /api/plants/{id}/apply-template      -> {plant, milestones}
+
+Events:
+  GET  /api/events/                         -> list[EventRead]
+  POST /api/events/                         -> EventRead (201)
+  GET  /api/events/{id}                     -> EventRead
+  PATCH /api/events/{id}                    -> EventRead
+  DELETE /api/events/{id}                   -> 204
+
+Profile:
+  GET  /api/profile/                        -> ProfileRead
+  POST /api/profile/                        -> ProfileRead (201)
+  PATCH /api/profile/                       -> ProfileRead
+  GET  /api/profile/tips                    -> {zone, date, tips[]}
+
+Zones:
+  GET  /api/zones/                          -> list[{zone, last_spring_frost, first_fall_frost}]
+  GET  /api/zones/timezones                 -> list[{value, label}]
+
+
+8. CURRENT DATA STATE
+---------------------
+Profile:
+  id=1, name="Legacy Garden", zone=7b, tz=America/New_York, zip=37211
+
+Plants:
+  id=1  "daisy"         status=planted  planted=None        harvest=None
+  id=2  "Roma Tomato"   status=growing  planted=2026-03-01  harvest=2026-06-04
+  id=3  "Bell Pepper"   status=growing  planted=2026-02-15  harvest=2026-06-15
+
+Milestones (Roma Tomato, id=2):
+  Germination (day 7)         COMPLETED 2026-03-08
+  First True Leaves (day 21)  COMPLETED 2026-03-22
+  Transplant Ready (day 42)   pending
+  First Flowers (day 60)      pending
+  Fruit Set (day 70)          pending
+  Fruit Ripening (day 85)     pending
+  First Harvest (day 95)      pending
+  Peak Harvest (day 110)      pending
+
+Milestones (Bell Pepper, id=3):
+  Germination (day 10)        COMPLETED 2026-02-25
+  First True Leaves (day 25)  COMPLETED 2026-03-12
+  Transplant Ready (day 56)   pending
+  First Buds (day 70)         pending
+  First Flowers (day 80)      pending
+  Fruit Set (day 90)          pending
+  Fruit Sizing (day 105)      pending
+  Color Change (day 115)      pending
+  First Harvest (day 120)     pending
+
+Overdue Events:
+  id=1  "Water Roma Tomato"       type=water      plant_id=2  start=2026-03-20
+  id=2  "Fertilize Bell Pepper"   type=fertilize  plant_id=3  start=2026-03-19
+
+Growth Templates Available:
+  tomato:   8 milestones (7d germination -> 110d peak harvest)
+  pepper:   9 milestones (10d germination -> 120d first harvest)
+  cucumber: milestones available
+  lettuce:  milestones available
+  basil:    milestones available
+
+Frost Data (Zone 7b):
+  Last Spring Frost:  April 1
+  First Fall Frost:   October 25
+  22 plants in PLANT_FROST_GUIDE with start-indoors and transplant timing
+
+
+9. FEATURES IMPLEMENTED
+------------------------
+[x] Landing page / Dashboard with hero, live clock, quick action cards
+[x] My Garden section — active plant status cards with progress bars
+[x] Plant detail modal — growth milestone timeline with mark-complete
+[x] Calendar with month/week/day views (list view on mobile)
+[x] Calendar event CRUD (create, edit, delete via modal)
+[x] Plant inventory CRUD (add, edit, delete plants)
+[x] User profile with USDA zone, timezone, and zip code
+[x] USDA hardiness zone data (1a through 13b) with frost dates
+[x] Frost & planting tips — 22 plants, urgency-sorted, zone-aware
+[x] Notifications bell — overdue + upcoming task alerts in dropdown
+[x] Live date/time clock respecting user timezone
+[x] Responsive mobile UI (hamburger nav, bottom-sheet modals, touch targets)
+[x] PWA support (manifest, service worker, iOS home screen install)
+[x] Growth milestone templates (tomato, pepper, cucumber, lettuce, basil)
+[x] Seed data script for demo (Roma Tomato + Bell Pepper)
+
+10. KNOWN LIMITATIONS / FUTURE WORK
+-------------------------------------
+- No user authentication (single-user app currently)
+- No Alembic migrations configured (using ALTER TABLE for schema changes)
+- SQLite only (PostgreSQL ready via config but not tested)
+- No image upload for plants
+- No recurring event support (e.g., "water every 3 days")
+- No weather API integration
+- No push notifications (only in-app bell)
+- Growth templates only for 5 plants (tomato, pepper, cucumber, lettuce, basil)
+- Service worker uses basic caching strategy
+- No test suite
+
+================================================================================
+  END OF CONTEXT — Commit 4683be4 on main
+================================================================================
