@@ -14,5 +14,8 @@ class Plant(Base):
     date_planted = Column(Date)
     location = Column(String(200))
     notes = Column(Text)
+    status = Column(String(50), default="planted")
+    expected_harvest_date = Column(Date, nullable=True)
 
     events = relationship("GardenEvent", back_populates="plant", cascade="all, delete-orphan")
+    milestones = relationship("GrowthMilestone", back_populates="plant", cascade="all, delete-orphan", order_by="GrowthMilestone.sort_order")

@@ -10,4 +10,5 @@ class UserProfile(Base):
     display_name = Column(String(100), nullable=False)
     usda_zone = Column(String(10), nullable=False)
     zip_code = Column(String(10), nullable=True)
+    timezone = Column(String(50), nullable=True, default="America/New_York")
     created_at = Column(DateTime, server_default=func.now(), nullable=False)

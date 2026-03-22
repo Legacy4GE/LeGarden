@@ -2,10 +2,46 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { profileApi } from '../api/client'
 import FrostTips from '../components/FrostTips'
+import MyGardenSection from '../components/MyGardenSection'
+import PlantDetailModal from '../components/PlantDetailModal'
+
+function useLiveClock(timezone) {
+  const [now, setNow] = useState(new Date())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  const tz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+
+  const date = now.toLocaleDateString('en-US', {
+    timeZone: tz,
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+
+  const time = now.toLocaleTimeString('en-US', {
+    timeZone: tz,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+
+  const tzAbbr = now.toLocaleTimeString('en-US', {
+    timeZone: tz,
+    timeZoneName: 'short',
+  }).split(' ').pop()
+
+  return { date, time, tzAbbr }
+}
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [selectedPlantId, setSelectedPlantId] = useState(null)
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -22,6 +58,7 @@ export default function DashboardPage() {
   }, [])
 
   const hasZone = profile && profile.usda_zone
+  const clock = useLiveClock(profile?.timezone)
 
   const quickActions = [
     {
@@ -65,58 +102,70 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto px-4 py-4 md:p-6">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-green-800 via-green-700 to-emerald-600 rounded-2xl p-10 mb-10 overflow-hidden shadow-xl">
+      <div className="relative bg-gradient-to-br from-green-800 via-green-700 to-emerald-600 rounded-2xl p-6 md:p-10 mb-6 md:mb-10 overflow-hidden shadow-xl">
         {/* Decorative background leaves */}
-        <div className="absolute top-0 right-0 w-64 h-64 opacity-10">
+        <div className="absolute top-0 right-0 w-40 md:w-64 h-40 md:h-64 opacity-10">
           <svg viewBox="0 0 200 200" fill="currentColor" className="text-white w-full h-full">
             <path d="M100 10 C140 30, 180 70, 170 120 C160 160, 120 190, 100 190 C80 190, 40 160, 30 120 C20 70, 60 30, 100 10Z" />
           </svg>
         </div>
-        <div className="absolute bottom-0 left-0 w-40 h-40 opacity-10 -translate-x-8 translate-y-8">
+        <div className="absolute bottom-0 left-0 w-28 md:w-40 h-28 md:h-40 opacity-10 -translate-x-8 translate-y-8">
           <svg viewBox="0 0 200 200" fill="currentColor" className="text-white w-full h-full">
             <path d="M100 10 C140 30, 180 70, 170 120 C160 160, 120 190, 100 190 C80 190, 40 160, 30 120 C20 70, 60 30, 100 10Z" />
           </svg>
         </div>
 
         <div className="relative">
-          <div className="flex items-center gap-3 mb-3">
-            <svg className="w-10 h-10 text-green-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+            <svg className="w-8 h-8 md:w-10 md:h-10 text-green-200 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 21c-1.5 0-6-3.5-6-9 0-3.5 2.5-6 6-6s6 2.5 6 6c0 5.5-4.5 9-6 9z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 21V9" />
             </svg>
-            <h1 className="text-4xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl md:text-4xl font-bold text-white tracking-tight">
               {profile?.display_name
                 ? `Welcome back, ${profile.display_name}`
                 : 'Welcome to LeGarden'}
             </h1>
           </div>
-          <p className="text-green-100 text-lg max-w-xl">
+          <p className="text-green-100 text-base md:text-lg max-w-xl">
             Your personal garden growth tracker. Plan plantings, track your garden through the seasons,
             and get frost-aware tips tailored to your growing zone.
           </p>
-          {hasZone && (
-            <div className="mt-4 inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-2 rounded-lg text-sm text-green-50">
+          <div className="mt-3 md:mt-4 flex flex-wrap items-center gap-2">
+            {hasZone && (
+              <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-2 rounded-lg text-sm text-green-50">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+                Zone {profile.usda_zone}
+              </div>
+            )}
+            <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-2 rounded-lg text-sm text-green-50">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Growing Zone {profile.usda_zone}
+              {clock.time} {clock.tzAbbr}
             </div>
-          )}
+          </div>
+          <p className="text-green-200/70 text-sm mt-2">{clock.date}</p>
         </div>
       </div>
 
+      {/* My Garden */}
+      <MyGardenSection onSelectPlant={setSelectedPlantId} />
+
       {/* Quick Actions */}
-      <div className="mb-10">
+      <div className="mb-6 md:mb-10">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {quickActions.map((action) => (
             <Link
               key={action.to}
               to={action.to}
-              className={`${action.color} ${action.hoverColor} text-white rounded-xl p-6 shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5 group`}
+              className={`${action.color} ${action.hoverColor} text-white rounded-xl p-5 md:p-6 shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5 group`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="p-2 bg-white/15 rounded-lg group-hover:bg-white/25 transition-colors">
@@ -135,9 +184,9 @@ export default function DashboardPage() {
 
       {/* Seasonal Summary Bar */}
       {hasZone && profile.last_frost_date && (
-        <div className="bg-white rounded-xl shadow p-5 mb-10">
+        <div className="bg-white rounded-xl shadow p-4 md:p-5 mb-6 md:mb-10">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Seasonal Summary</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-center">
               <svg className="w-6 h-6 text-blue-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
@@ -166,7 +215,7 @@ export default function DashboardPage() {
       )}
 
       {/* Frost & Planting Tips */}
-      <div className="mb-10">
+      <div className="mb-6 md:mb-10">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Frost & Planting Tips</h2>
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -176,6 +225,13 @@ export default function DashboardPage() {
           <FrostTips hasProfile={!!hasZone} />
         )}
       </div>
+
+      {selectedPlantId && (
+        <PlantDetailModal
+          plantId={selectedPlantId}
+          onClose={() => setSelectedPlantId(null)}
+        />
+      )}
     </div>
   )
 }

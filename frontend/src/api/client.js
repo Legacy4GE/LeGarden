@@ -10,6 +10,11 @@ export const plantsApi = {
   create: (data) => api.post('/plants/', data),
   update: (id, data) => api.patch(`/plants/${id}`, data),
   delete: (id) => api.delete(`/plants/${id}`),
+  listActive: () => api.get('/plants/active'),
+  getDetail: (id) => api.get(`/plants/${id}/detail`),
+  applyTemplate: (id) => api.post(`/plants/${id}/apply-template`),
+  updateMilestone: (plantId, milestoneId, data) =>
+    api.patch(`/plants/${plantId}/milestones/${milestoneId}`, data),
 }
 
 export const eventsApi = {
@@ -32,6 +37,7 @@ export const tipsApi = {
 
 export const zonesApi = {
   list: () => api.get('/zones/'),
+  timezones: () => api.get('/zones/timezones'),
 }
 
 export default api

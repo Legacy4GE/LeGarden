@@ -8,8 +8,9 @@ const USDA_ZONES = [
 ]
 
 export default function ProfilePage() {
-  const [form, setForm] = useState({ display_name: '', usda_zone: '', zip_code: '' })
+  const [form, setForm] = useState({ display_name: '', usda_zone: '', zip_code: '', timezone: '' })
   const [zones, setZones] = useState([])
+  const [timezones, setTimezones] = useState([])
   const [hasProfile, setHasProfile] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -18,13 +19,18 @@ export default function ProfilePage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [profileRes, zonesRes] = await Promise.allSettled([
+        const [profileRes, zonesRes, tzRes] = await Promise.allSettled([
           profileApi.get(),
           zonesApi.list(),
+          zonesApi.timezones(),
         ])
 
         if (zonesRes.status === 'fulfilled') {
           setZones(zonesRes.value.data)
+        }
+
+        if (tzRes.status === 'fulfilled') {
+          setTimezones(tzRes.value.data)
         }
 
         if (profileRes.status === 'fulfilled' && profileRes.value.data) {
@@ -33,11 +39,15 @@ export default function ProfilePage() {
             display_name: p.display_name || '',
             usda_zone: p.usda_zone || '',
             zip_code: p.zip_code || '',
+            timezone: p.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
           })
           setHasProfile(true)
+        } else {
+          // Default to browser timezone
+          setForm((f) => ({ ...f, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }))
         }
       } catch {
-        // Profile may not exist yet, that's OK
+        // Profile may not exist yet
       } finally {
         setLoading(false)
       }
@@ -46,6 +56,21 @@ export default function ProfilePage() {
   }, [])
 
   const selectedZoneInfo = zones.find((z) => z.zone === form.usda_zone)
+
+  // Live preview of selected timezone
+  const tzPreview = form.timezone
+    ? new Date().toLocaleString('en-US', {
+        timeZone: form.timezone,
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short',
+      })
+    : null
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -71,7 +96,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
+      <div className="max-w-2xl mx-auto px-4 py-4 md:p-6">
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-700" />
         </div>
@@ -80,10 +105,10 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className="max-w-2xl mx-auto px-4 py-4 md:p-6">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">My Profile</h1>
-      <p className="text-gray-500 text-sm mb-8">
-        Set your growing zone to receive personalized frost and planting tips.
+      <p className="text-gray-500 text-sm mb-6 md:mb-8">
+        Set your growing zone and timezone to receive personalized frost and planting tips.
       </p>
 
       {feedback && (
@@ -98,7 +123,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-4 md:p-6 space-y-5 md:space-y-6">
         <div>
           <label htmlFor="display_name" className="block text-sm font-medium text-gray-700 mb-1">
             Display Name
@@ -109,7 +134,7 @@ export default function ProfilePage() {
             value={form.display_name}
             onChange={(e) => setForm({ ...form, display_name: e.target.value })}
             placeholder="Your garden name"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-300 rounded-lg px-3 py-3 md:py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
 
@@ -121,7 +146,7 @@ export default function ProfilePage() {
             id="usda_zone"
             value={form.usda_zone}
             onChange={(e) => setForm({ ...form, usda_zone: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+            className="w-full border border-gray-300 rounded-lg px-3 py-3 md:py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
           >
             <option value="">Select your zone...</option>
             {USDA_ZONES.map((zone) => (
@@ -130,6 +155,30 @@ export default function ProfilePage() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-1">
+            Time Zone
+          </label>
+          <select
+            id="timezone"
+            value={form.timezone}
+            onChange={(e) => setForm({ ...form, timezone: e.target.value })}
+            className="w-full border border-gray-300 rounded-lg px-3 py-3 md:py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+          >
+            <option value="">Select your timezone...</option>
+            {timezones.map((tz) => (
+              <option key={tz.value} value={tz.value}>
+                {tz.label}
+              </option>
+            ))}
+          </select>
+          {tzPreview && (
+            <p className="text-xs text-gray-500 mt-1.5">
+              Current time: {tzPreview}
+            </p>
+          )}
         </div>
 
         <div>
@@ -143,7 +192,7 @@ export default function ProfilePage() {
             onChange={(e) => setForm({ ...form, zip_code: e.target.value })}
             placeholder="e.g. 90210"
             maxLength={10}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-300 rounded-lg px-3 py-3 md:py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
 
@@ -162,18 +211,13 @@ export default function ProfilePage() {
                 <p className="text-gray-700">{selectedZoneInfo.first_fall_frost || 'N/A'}</p>
               </div>
             </div>
-            {selectedZoneInfo.growing_season_days && (
-              <p className="text-xs text-green-600 mt-2">
-                Growing season: ~{selectedZoneInfo.growing_season_days} days
-              </p>
-            )}
           </div>
         )}
 
         <button
           type="submit"
           disabled={saving}
-          className="w-full px-4 py-2.5 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full px-4 py-3 md:py-2.5 bg-green-700 text-white rounded-lg text-base md:text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {saving ? 'Saving...' : hasProfile ? 'Update Profile' : 'Create Profile'}
         </button>

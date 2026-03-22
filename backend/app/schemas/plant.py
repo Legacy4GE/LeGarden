@@ -1,6 +1,8 @@
 from datetime import date
 from pydantic import BaseModel
 
+from app.schemas.milestone import MilestoneRead
+
 
 class PlantBase(BaseModel):
     name: str
@@ -9,6 +11,8 @@ class PlantBase(BaseModel):
     date_planted: date | None = None
     location: str | None = None
     notes: str | None = None
+    status: str | None = "planted"
+    expected_harvest_date: date | None = None
 
 
 class PlantCreate(PlantBase):
@@ -22,6 +26,8 @@ class PlantUpdate(BaseModel):
     date_planted: date | None = None
     location: str | None = None
     notes: str | None = None
+    status: str | None = None
+    expected_harvest_date: date | None = None
 
 
 class PlantRead(PlantBase):
@@ -29,3 +35,7 @@ class PlantRead(PlantBase):
 
     class Config:
         from_attributes = True
+
+
+class PlantDetailRead(PlantRead):
+    milestones: list[MilestoneRead] = []

@@ -1,8 +1,54 @@
+from zoneinfo import available_timezones
+
 from fastapi import APIRouter
 
 from app.services.frost_data import ZONE_FROST_DATES
 
 router = APIRouter()
+
+
+US_TIMEZONES = [
+    "America/New_York",
+    "America/Chicago",
+    "America/Denver",
+    "America/Los_Angeles",
+    "America/Phoenix",
+    "America/Anchorage",
+    "Pacific/Honolulu",
+    "America/Adak",
+    "America/Boise",
+    "America/Detroit",
+    "America/Indiana/Indianapolis",
+    "America/Kentucky/Louisville",
+    "America/Juneau",
+    "America/Nome",
+]
+
+TZ_LABELS = {
+    "America/New_York": "Eastern Time (ET)",
+    "America/Chicago": "Central Time (CT)",
+    "America/Denver": "Mountain Time (MT)",
+    "America/Los_Angeles": "Pacific Time (PT)",
+    "America/Phoenix": "Arizona (no DST)",
+    "America/Anchorage": "Alaska Time (AKT)",
+    "Pacific/Honolulu": "Hawaii Time (HT)",
+    "America/Adak": "Hawaii-Aleutian (HAT)",
+    "America/Boise": "Mountain Time - Boise",
+    "America/Detroit": "Eastern Time - Detroit",
+    "America/Indiana/Indianapolis": "Eastern Time - Indiana",
+    "America/Kentucky/Louisville": "Eastern Time - Louisville",
+    "America/Juneau": "Alaska Time - Juneau",
+    "America/Nome": "Alaska Time - Nome",
+}
+
+
+@router.get("/timezones")
+def list_timezones():
+    """Return US timezones for the profile timezone picker."""
+    return [
+        {"value": tz, "label": TZ_LABELS.get(tz, tz)}
+        for tz in US_TIMEZONES
+    ]
 
 
 @router.get("/")

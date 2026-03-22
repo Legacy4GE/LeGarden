@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
+import listPlugin from '@fullcalendar/list'
 import interactionPlugin from '@fullcalendar/interaction'
 import { eventsApi, plantsApi } from '../api/client'
 import EventModal from '../components/EventModal'
@@ -16,10 +17,25 @@ const TYPE_COLORS = {
   other: '#6b7280',
 }
 
+const MOBILE_BREAKPOINT = 768
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  return isMobile
+}
+
 export default function CalendarPage() {
   const [events, setEvents] = useState([])
   const [plants, setPlants] = useState([])
   const [modalEvent, setModalEvent] = useState(null)
+  const isMobile = useIsMobile()
 
   const fetchData = async () => {
     const [evRes, plRes] = await Promise.all([eventsApi.list(), plantsApi.list()])
@@ -66,15 +82,16 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto px-3 py-4 md:p-6">
       <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        headerToolbar={{
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay',
-        }}
+        key={isMobile ? 'mobile' : 'desktop'}
+        plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+        initialView={isMobile ? 'listMonth' : 'dayGridMonth'}
+        headerToolbar={
+          isMobile
+            ? { left: 'prev,next', center: 'title', right: 'listMonth,dayGridMonth' }
+            : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }
+        }
         events={calendarEvents}
         dateClick={handleDateClick}
         eventClick={handleEventClick}
