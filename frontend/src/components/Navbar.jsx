@@ -1,8 +1,10 @@
 import { Link, useLocation } from 'react-router-dom'
 
 const navItems = [
-  { path: '/', label: 'Calendar' },
+  { path: '/', label: 'Dashboard' },
+  { path: '/calendar', label: 'Calendar' },
   { path: '/plants', label: 'My Plants' },
+  { path: '/profile', label: 'Profile' },
 ]
 
 export default function Navbar() {

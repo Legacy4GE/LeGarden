@@ -20,4 +20,18 @@ export const eventsApi = {
   delete: (id) => api.delete(`/events/${id}`),
 }
 
+export const profileApi = {
+  get: () => api.get('/profile/'),
+  create: (data) => api.post('/profile/', data),
+  update: (data) => api.patch('/profile/', data),
+}
+
+export const tipsApi = {
+  list: () => api.get('/profile/tips/'),
+}
+
+export const zonesApi = {
+  list: () => api.get('/zones/'),
+}
+
 export default api

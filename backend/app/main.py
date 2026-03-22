@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import plants, events
+from app.routers import plants, events, profile, zones
 
 app = FastAPI(
     title="LeGarden API",
@@ -25,3 +25,5 @@ def health_check():
 
 app.include_router(plants.router, prefix="/api/plants", tags=["plants"])
 app.include_router(events.router, prefix="/api/events", tags=["events"])
+app.include_router(profile.router, prefix="/api/profile", tags=["profile"])
+app.include_router(zones.router, prefix="/api/zones", tags=["zones"])
